@@ -29,7 +29,7 @@ namespace FluentValidationASPNET.Controllers
         }
 
         [HttpPost]
-        public IActionResult Index(Register register)
+        public IActionResult Index(CustomerViewModel customerVm)
         {
             string message = "";
             if (!ModelState.IsValid)

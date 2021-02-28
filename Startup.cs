@@ -1,6 +1,8 @@
+using AutoMapper;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using FluentValidationASPNET.Data;
+using FluentValidationASPNET.Domain;
+using FluentValidationASPNET.Mapping;
 using FluentValidationASPNET.Models;
 using FluentValidationASPNET.Models.ValidationModel;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,22 +34,53 @@ namespace FluentValidationASPNET
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // Fluant with class
-            services.AddTransient<IValidator<Register>, RegisterValidation>();
+            // Fluant with Models
+            services.AddTransient<IValidator<CustomerViewModel>, CustomerValidation>();
+
+            // Register IService DI
 
 
+            // AutoMapper
+            #region Add AutoMapper
+            var mapperConfig = new MapperConfiguration(config =>
+            {
+                config.AddProfile(new CustomerMappingProfile());
+            });
 
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddSingleton(provider => mapperConfig.CreateMapper());
+            #endregion
+
+            // Add Swagger
+            #region   Add Swagger
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Title = "API Customer",
+                    Version = "1.0",
+                    Description = "This API Customer",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "DamNgocSon",
+                        Email = "damngocsonIT@gmail.com",
+                        Url = new Uri("https://sonlanggtu.github.io/"),
+                    }
+                });
+            });
+            #endregion
+
+            // Add Connection DbContext
+            services.AddDbContextPool<FluentDbContext>(options =>
                 options.UseSqlServer(
                     Configuration.GetConnectionString("FluentValidationConnection")));
-            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-                .AddEntityFrameworkStores<ApplicationDbContext>();
+            services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
+                                .AddEntityFrameworkStores<FluentDbContext>();
 
             // Register Fluent with file Assembly
-            services.AddControllersWithViews().AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<RegisterValidation>());
-
-
-
+            services.AddControllersWithViews()
+                // Tranh loop lap Object Entity
+                .AddNewtonsoftJson(options => options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore)
+                .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<CustomerValidation>());
 
 
             services.AddRazorPages();
@@ -66,6 +100,17 @@ namespace FluentValidationASPNET
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
+            // Enable middleware to serve generated Swagger as a JSON endpoint.
+            app.UseSwagger();
+
+            // Enable middleware to serve swagger-ui (HTML, JS, CSS, etc.),
+            // specifying the Swagger JSON endpoint.
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Customer");
+            });
+
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 

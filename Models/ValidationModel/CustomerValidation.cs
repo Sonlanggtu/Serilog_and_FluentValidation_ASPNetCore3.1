@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace FluentValidationASPNET.Models.ValidationModel
 {
-    public class RegisterValidation : AbstractValidator<Register>
+    public class CustomerValidation : AbstractValidator<CustomerViewModel>
     {
-        public RegisterValidation()
+        public CustomerValidation()
         {
             RuleFor(x => x.UserName).NotEmpty().WithMessage("Yêu cầu nhập tài khoản");
             RuleFor(x => x.Password).NotEmpty().WithMessage("Yêu cầu nhập mật khẩu");
